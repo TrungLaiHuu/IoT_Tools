@@ -1,41 +1,65 @@
-#include <Wire.h>
-#include <Eeprom24C32_64.h>
-#define EEPROM_ADDRESS 0x50
-static Eeprom24C32_64 eeprom(EEPROM_ADDRESS);
+// Include the correct display library
+// For a connection via I2C using Wire include
+#include <Wire.h>  // Only needed for Arduino 1.6.5 and earlier
+#include "SSD1306Wire.h" // legacy include: `#include "SSD1306.h"`
+#include "DHT.h"
+
+#define DHTPIN D7     // what digital pin we're connected to
+
+// Uncomment whatever type you're using!
+#define DHTTYPE DHT11   // DHT 11
+// Initialize the OLED display using Wire library
+SSD1306Wire  oled(0x3c, D15, D14);
+
+DHT dht(DHTPIN, DHTTYPE);
+
 void setup()
 {
-  /* Initialize serial communication. */
   Serial.begin(115200);
-  Serial.println();
+  delay(10);
+  printf("\nDHT11\n");
+  oled.init();
+  // display.flipScreenVertically();
+  oled.setContrast(255);
+  oled.clear();
 
-  /* Initiliaze EEPROM library. */
-  eeprom.initialize();
+  delay(3000);
 
-  /* Giá trị lưu vào AT24C32 */
-  double dValue = 245.3456;
-  /* Mảng chứa giá trị cần lưu */
-  byte wArray[sizeof(double)] = {0};
-  /* Mảng đọc giá trị từ AT24C32 */
-  byte rArray[sizeof(double)] = {0};
-  /* Giá trị đọc kiểu double */
-  double dDestination = 0;
-  
-
-  /* Copy vùng nhớ của biến cần lưu vào mảng wArray */
-  memcpy(wArray , &dValue , sizeof( double ) );
-  Serial.printf("Write %f to eeprom\n", dValue);
-  /* Ghi mảng đó vào AT24C32 */
-  eeprom.writeBytes(0, sizeof( double ), wArray);
-
-  /* Đọc một mảng độ dài là double tại địa chỉ 0 */
-  eeprom.readBytes(0, sizeof(double), rArray);
-  /* Chuyển ngược lại mảng thành giá trị kiểu double */
-  memcpy(&dDestination, rArray, sizeof(double));
-
-  // Print read bytes.
-  Serial.printf("Gia tri doc duoc: %f\n", dDestination);
+  dht.begin();
 }
+
+//float old_h = 0, old_t = 0;
+int x = 0;
+bool delPixel = false;
+
 void loop()
 {
+  delay(2000);
+  float h = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
+
+  if (delPixel == true)
+  {
+    oled.setColor(BLACK);//màu nền
+    if (x == 127)
+      oled.drawVerticalLine(0, 10, 54);
+    else
+      oled.drawVerticalLine(x + 1, 10, 54);
+  }
+  int y = map(h, 0, 100, 10, 63);
+  oled.setColor(WHITE);//màu pixel
+  oled.setPixel(x++, 63 - y);
+  if (x > 127)
+  {
+    x = 0;
+    delPixel = true;
+  }
+
+
+  printf("\nDo am: %s %", String(h).c_str());
+  printf("\nNhiet do: %s *C", String(t).c_str());
+
+  oled.display();
 
 }
