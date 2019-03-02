@@ -1,0 +1,3 @@
+    //const char* mqtt_username = "dsbzyewy";
+    //const char* mqtt_password = "EXNnEfE18VTu";
+    //client.connect(mqtt_clientID, mqtt_username, mqtt_password);
